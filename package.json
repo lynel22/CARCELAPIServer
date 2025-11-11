@@ -1,0 +1,14 @@
+{
+	"name": "rest-ws",
+	"version": "0.0.1",
+	"description": "REST WS",
+	"author": "UCA",
+	"dependencies": {
+		"body-parser": "^1.20.1",
+		"cors": "^2.8.5",
+		"express": "^4.21.1",
+		"mqtt": "^5.10.1",
+		"node-json2html": "^3.2.0"
+	},
+	"engine": "node >= 0.10.0"
+}
