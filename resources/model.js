@@ -27,6 +27,8 @@ const resources = {
         [10, 10],
         [0, 10],
       ],
+      noise: 0,
+      smoke: 0,
       maxCapacity: 20, // aforo máximo
     },
     {
@@ -38,6 +40,8 @@ const resources = {
         [18, 20],
         [6, 20],
       ],
+      noise: 0,
+      smoke: 0,
     },
     {
       id: 'C',
@@ -48,6 +52,8 @@ const resources = {
         [22, 10],
         [12, 10],
       ],
+      noise: 0,
+      smoke: 0,
     },
     {
       id: 'D',
@@ -58,6 +64,8 @@ const resources = {
         [6, 20],
         [3, 20],
       ],
+      noise: 0,
+      smoke: 0,
       maxCapacity: 20, // aforo máximo
     },
   ],
