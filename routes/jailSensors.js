@@ -2,6 +2,17 @@ const express = require('express');
 const router = express.Router();
 const { resources, getRoomFromCoordinates, updateOccupancy } = require('./../resources/model');
 
+router.get('/rooms', (req, res, next) => {
+    try {
+        const rooms = resources.rooms;
+        res.send(rooms);
+        next();
+    } catch (err) {
+        console.error('Error en GET /rooms:', err);
+        next(err);
+    }
+});
+
 router.post('/position', (req, res, next) => {
   try {
     const { prisonerId, x, y } = req.body;
