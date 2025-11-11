@@ -62,10 +62,82 @@ router.post('/position', (req, res, next) => {
       occupancy,
     });
 
+    next(err);
+
   } catch (err) {
     console.error('Error en POST /position:', err);
     next(err);
   }
 });
+
+
+router.post('/noise', (req, res, next) => {
+  try {
+    const { sala, noiseLevel } = req.body;
+
+    if (!sala || typeof noiseLevel !== 'number') {
+      return res.status(400).json({ error: 'Datos inválidos: se requiere sala y noiseLevel numérico' });
+    }
+
+    // Buscar la sala por ID
+    const room = resources.rooms.find(r => r.id === sala);
+    if (!room) {
+      return res.status(404).json({ error: `No se encontró la sala con id ${sala}` });
+    }
+
+    // Actualizar el nivel de ruido
+    room.noise = noiseLevel;
+
+    // TODO: emitir por WebSocket al dashboard
+    // ej: io.emit('noiseUpdate', { sala, noiseLevel });
+
+    // TODO: si supera el umbral, emitir alerta
+    // ej: if (noiseLevel > 80) io.emit('noiseAlert', { sala, level: noiseLevel });
+
+    res.status(200).json({
+      message: `Nivel de ruido actualizado para sala ${sala}`,
+      data: { sala, noiseLevel },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /smoke
+ * Recibe y guarda el nivel de humo por sala
+ */
+router.post('/smoke', (req, res, next) => {
+  try {
+    const { sala, smokeLevel } = req.body;
+
+    if (!sala || typeof smokeLevel !== 'number') {
+      return res.status(400).json({ error: 'Datos inválidos: se requiere sala y smokeLevel numérico' });
+    }
+
+    // Buscar la sala por ID
+    const room = resources.rooms.find(r => r.id === sala);
+    if (!room) {
+      return res.status(404).json({ error: `No se encontró la sala con id ${sala}` });
+    }
+
+    // Actualizar el nivel de humo
+    room.smoke = smokeLevel;
+
+    // TODO: emitir por WebSocket al dashboard
+    // ej: io.emit('smokeUpdate', { sala, smokeLevel });
+
+    // TODO: si supera el umbral, emitir alerta
+    // ej: if (smokeLevel > 50) io.emit('smokeAlert', { sala, level: smokeLevel });
+
+    res.status(200).json({
+      message: `Nivel de humo actualizado para sala ${sala}`,
+      data: { sala, smokeLevel },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+    
 
 module.exports = router;
