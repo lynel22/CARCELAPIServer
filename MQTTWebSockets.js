@@ -1,6 +1,6 @@
 var mqtt = require("mqtt");
 const clientId = 'mqttjs_' + Math.random().toString(16).substr(2, 8);
-const host = 'ws://broker.emqx.io:8083/mqtt'; // Use ws://broker.emqx.io:8083/mqtt
+const host = 'ws://broker.emqx.io:8083/mqtt';
 const options = {
     keepalive: 60,
     clientId: clientId,

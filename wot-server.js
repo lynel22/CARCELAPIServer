@@ -1,11 +1,5 @@
-/**
- * 
- */
-
 var httpServer = require('./servers/http-server');
-
 var resources = require('./resources/model');
-
 var webSocketServer= require('./servers/websocket');
 
 var wotServer = httpServer.listen(8484, function() {
