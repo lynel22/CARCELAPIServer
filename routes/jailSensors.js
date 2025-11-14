@@ -86,10 +86,8 @@ router.post('/position', (req, res, next) => {
         if (room && room.maxCapacity) {
             const count = occupancy[room.id];
             if (count > room.maxCapacity) {
-                console.log(
-                    `Aforo excedido en ${room.name}: ${count}/${room.maxCapacity}`
-                );
-                // TODO: emitir evento WebSocket 
+                console.log(`Aforo excedido en ${room.name}: ${count}/${room.maxCapacity}`);
+                mqttws.publish('jail/alerts/capacity', JSON.stringify({room}));
             }
         }
 
@@ -136,9 +134,8 @@ router.post('/noise', (req, res, next) => {
         const room = resources.rooms.find(r => r.id === sala);
         room.noise = noiseLevel;
 
-        // console.log(`Noise level in room ${sala} updated to ${noiseLevel}`);
 
-        // TODO: emitir por WebSocket al dashboard todas las habitaciones cuando le llega la de D todo en un solo mensaje
+        // emitir por WebSocket al dashboard todas las habitaciones cuando le llega la de D todo en un solo mensaje
         if (sala === 'D') {
             const noiseLevels = {};
             resources.rooms.forEach(r => {
@@ -147,8 +144,12 @@ router.post('/noise', (req, res, next) => {
             mqttws.publish('jail/noise', JSON.stringify(noiseLevels));
         }
 
-        // TODO: si supera el umbral, emitir alerta
-        // ej: if (noiseLevel > 80) io.emit('noiseAlert', { sala, level: noiseLevel });
+        // si supera el umbral, emitir alerta
+        if (noiseLevel > 1.5) {
+            console.log(`Alerta de ruido: Nivel de ruido alto en sala ${sala}`);
+            
+            mqttws.publish('jail/alerts/noise', JSON.stringify({sala}));
+        }
 
         res.status(200).json({
             message: `Nivel de ruido actualizado para sala ${sala}`,
@@ -186,6 +187,7 @@ router.post('/smoke', (req, res, next) => {
 
         // Si supera el umbral, emitir alerta por mqtt a carcel/aspersor
         if (smokeLevel > 1) {
+            client.publish('jail/alerta/aspersor', JSON.stringify({ sala }));
             client.publish('carcel/aspersor', JSON.stringify({ sala }));
         }
 
