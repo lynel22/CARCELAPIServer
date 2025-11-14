@@ -10,6 +10,8 @@ const resources = {
         { id: 3, name: 'Carlos' },
     ],
 
+    time: { hour: 0, minute: 0 },
+
     // Últimas posiciones registradas por prisionero
     positions: {}, // { [prisonerId]: { x, y, room, timestamp } }
 
