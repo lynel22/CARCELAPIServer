@@ -41,6 +41,30 @@ router.post('/prisoner', (req, res, next) => {
         next(err);
     }
 });
+
+/** 
+ * POST /time
+ * 
+ */
+
+router.post('/time', (req, res, next) => {
+    try {
+        const { hour, minute } = req.body;
+        if (hour === undefined || minute === undefined) {
+            return res.status(400).json({ error: 'Faltan datos' });
+        }
+        resources.time.hour = hour;
+        resources.time.minute = minute;
+        client.publish('jail/time', JSON.stringify({ hour, minute }));
+
+        res.json({ message: 'Hora enviada por MQTT'+ hour + ':' + minute });
+        next();
+    } catch (err) {
+        console.error('Error en POST /time:', err);
+        next(err);
+    }
+});
+
     
 /**
  * POST /position
