@@ -1,12 +1,6 @@
-/**
- * 
- */
-
 var express = require('express'),
 	cors = require('cors'),
 	bodyParser = require('body-parser');
-	
-
 var resources = require('../resources/model');
 var jailSensorRoutes = require('../routes/jailSensors');
 
@@ -18,10 +12,6 @@ app.get('/', function(req, res) {
 	res.send('Hello!')
 });
 
-
 app.use('/jail', jailSensorRoutes);
-
-
-
 
 module.exports = app;

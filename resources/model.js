@@ -4,71 +4,85 @@
  */
 
 const resources = {
-  prisoners: [
-    { id: 1, name: 'John Doe' },
-    { id: 2, name: 'Jane Smith' },
-    { id: 3, name: 'Carlos Pérez' },
-  ],
+    prisoners: [
+        { id: 1, name: 'John' },
+        { id: 2, name: 'Jane' },
+        { id: 3, name: 'Carlos' },
+    ],
 
-  // Últimas posiciones registradas por prisionero
-  positions: {}, // { [prisonerId]: { x, y, room, timestamp } }
+    // Últimas posiciones registradas por prisionero
+    positions: {}, // { [prisonerId]: { x, y, room, timestamp } }
 
-  // Ocupación actual por sala
-  occupancy: {}, // { [roomId]: cantidad }
+    // Ocupación actual por sala
+    occupancy: {}, // { [roomId]: cantidad }
 
-  // Definición de salas (polígonos con sus vértices)
-  rooms: [
-    {
-      id: 'A',
-      name: 'Comedor',
-      polygon: [
-        [0, 0],
-        [10, 0],
-        [10, 10],
-        [0, 10],
-      ],
-      noise: 0,
-      smoke: 0,
-      maxCapacity: 20, // aforo máximo
-    },
-    {
-      id: 'B',
-      name: 'Celdas',
-      polygon: [
-        [6, 10],
-        [18, 10],
-        [18, 20],
-        [6, 20],
-      ],
-      noise: 0,
-      smoke: 0,
-    },
-    {
-      id: 'C',
-      name: 'Patio',
-      polygon: [
-        [12, 0],
-        [22, 0],
-        [22, 10],
-        [12, 10],
-      ],
-      noise: 0,
-      smoke: 0,
-    },
-    {
-      id: 'D',
-      name: 'Duchas',
-      polygon: [
-        [3, 12],
-        [6, 12],
-        [6, 20],
-        [3, 20],
-      ],
-      noise: 0,
-      smoke: 0,
-      maxCapacity: 20, // aforo máximo
-    },
-  ],
+    // Definición de salas (polígonos con sus vértices)
+    rooms: [
+        {
+            id: 'A',
+            name: 'Comedor',
+            polygon: [
+                [0, 0],
+                [10, 0],
+                [10, 10],
+                [0, 10],
+            ],
+            noise: 0,
+            smoke: 0,
+            maxCapacity: 20, // aforo máximo
+            doors: [
+                { pos: [8, 10], destino: 'B' }
+            ]
+        },
+        {
+            id: 'B',
+            name: 'Celdas',
+            polygon: [
+                [6, 10],
+                [18, 10],
+                [18, 20],
+                [6, 20],
+            ],
+            noise: 0,
+            smoke: 0,
+            doors: [
+                { pos: [8, 10], destino: 'A' },
+                { pos: [6, 16], destino: 'D' },
+                { pos: [15, 10], destino: 'C' }
+            ]
+        },
+        {
+            id: 'C',
+            name: 'Patio',
+            polygon: [
+                [12, 0],
+                [22, 0],
+                [22, 10],
+                [12, 10],
+            ],
+            noise: 0,
+            smoke: 0,
+            doors: [
+                { pos: [15, 10], destino: 'B' }
+            ]
+        },
+        {
+            id: 'D',
+            name: 'Duchas',
+            polygon: [
+                [3, 12],
+                [6, 12],
+                [6, 20],
+                [3, 20],
+            ],
+            noise: 0,
+            smoke: 0,
+            maxCapacity: 20, // aforo máximo
+            doors: [
+                { pos: [6, 16], destino: 'B' }
+            ]
+        },
+    ],
 };
 
 /**
@@ -76,18 +90,18 @@ const resources = {
  * Algoritmo: ray casting (sin dependencias externas)
  */
 function pointInPolygon(x, y, polygon) {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][0],
-      yi = polygon[i][1];
-    const xj = polygon[j][0],
-      yj = polygon[j][1];
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0],
+            yi = polygon[i][1];
+        const xj = polygon[j][0],
+            yj = polygon[j][1];
 
-    const intersect =
-      yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
+        const intersect =
+            yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
+        if (intersect) inside = !inside;
+    }
+    return inside;
 }
 
 /**
@@ -95,12 +109,12 @@ function pointInPolygon(x, y, polygon) {
  * o null si está fuera de todas las salas.
  */
 function getRoomFromCoordinates(x, y) {
-  for (const room of resources.rooms) {
-    if (pointInPolygon(x, y, room.polygon)) {
-      return room;
+    for (const room of resources.rooms) {
+        if (pointInPolygon(x, y, room.polygon)) {
+            return room;
+        }
     }
-  }
-  return null;
+    return null;
 }
 
 /**
@@ -108,27 +122,27 @@ function getRoomFromCoordinates(x, y) {
  * en base a las posiciones actuales.
  */
 function updateOccupancy() {
-  const occupancy = {};
+    const occupancy = {};
 
-  // Inicializa a cero
-  for (const room of resources.rooms) {
-    occupancy[room.id] = 0;
-  }
-
-  // Recorre posiciones actuales
-  for (const prisonerId in resources.positions) {
-    const pos = resources.positions[prisonerId];
-    if (pos && pos.room && occupancy[pos.room] !== undefined) {
-      occupancy[pos.room]++;
+    // Inicializa a cero
+    for (const room of resources.rooms) {
+        occupancy[room.id] = 0;
     }
-  }
 
-  resources.occupancy = occupancy;
-  return occupancy;
+    // Recorre posiciones actuales
+    for (const prisonerId in resources.positions) {
+        const pos = resources.positions[prisonerId];
+        if (pos && pos.room && occupancy[pos.room] !== undefined) {
+            occupancy[pos.room]++;
+        }
+    }
+
+    resources.occupancy = occupancy;
+    return occupancy;
 }
 
 module.exports = {
-  resources,
-  getRoomFromCoordinates,
-  updateOccupancy,
+    resources,
+    getRoomFromCoordinates,
+    updateOccupancy,
 };
