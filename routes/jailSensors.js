@@ -111,6 +111,7 @@ router.post('/position', (req, res, next) => {
                 allPrisoners.push({ prisonerId: i, x: pos.x, y: pos.y, name: prName, room: prRoom ? prRoom.name : 'Fuera del recinto' });
             }
             mqttws.publish('jail/prisoners', JSON.stringify(allPrisoners));
+            mqttws.publish('jail/occupancy', JSON.stringify(occupancy));
         }
 
         next();
