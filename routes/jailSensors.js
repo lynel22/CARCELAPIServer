@@ -113,8 +113,8 @@ router.post('/position', (req, res, next) => {
         // ======================
 
         // Horario nocturno (00:00 - 06:00) fuera de celdas
-        const now = new Date(); //hay que cambiar para que no pille la hora del servidor
-        const hour = now.getHours();
+        
+        const hour = resources.time.hour;
 
         if (hour >= 0 && hour < 6) {
             if (room && room.id !== 'B') {
@@ -122,6 +122,8 @@ router.post('/position', (req, res, next) => {
                     `Alerta nocturna: Prisionero ${prisonerId} en ${room.name} (${room.id}) fuera de la sala de celdas`
                 );
                 // TODO: emitir evento WebSocket 
+                mqttws.publish('jail/alerts/night', JSON.stringify({prisonerId}));
+
             }
         }
 
