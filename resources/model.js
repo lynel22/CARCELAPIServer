@@ -31,7 +31,7 @@ const resources = {
             ],
             noise: 0,
             smoke: 0,
-            maxCapacity: 20, // aforo máximo
+            maxCapacity: 5, // aforo máximo
             doors: [
                 { pos: [8, 10], destino: 'B' }
             ]
@@ -79,7 +79,7 @@ const resources = {
             ],
             noise: 0,
             smoke: 0,
-            maxCapacity: 20, // aforo máximo
+            maxCapacity: 2, // aforo máximo
             doors: [
                 { pos: [6, 16], destino: 'B' }
             ]
