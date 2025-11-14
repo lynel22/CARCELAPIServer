@@ -42,7 +42,12 @@ router.post('/prisoner', (req, res, next) => {
     }
 });
     
-
+/**
+ * POST /position
+ * Recibe la posición (x, y) de un prisionero,
+ * actualiza su sala y recalcula ocupaciones.
+ * Además, detecta y emite alertas si es necesario.
+ * */
 router.post('/position', (req, res, next) => {
     try {
         const { prisonerId, x, y } = req.body;
@@ -108,28 +113,30 @@ router.post('/position', (req, res, next) => {
     }
 });
 
-
+/**
+ * POST /noise
+ * Recibe y guarda el nivel de ruido por sala
+ * */
 router.post('/noise', (req, res, next) => {
     try {
         const { sala, noiseLevel } = req.body;
 
-        if (!sala || typeof noiseLevel !== 'number') {
-            return res.status(400).json({ error: 'Datos inválidos: se requiere sala y noiseLevel numérico' });
-        }
+        if (!sala || typeof noiseLevel !== 'number') { return res.status(400).json({ error: 'Datos inválidos: se requiere sala y noiseLevel numérico' }); }
 
-        // Buscar la sala por ID
+        // Buscar la sala por ID y actualiza el nivel de ruido
         const room = resources.rooms.find(r => r.id === sala);
-        if (!room) {
-            return res.status(404).json({ error: `No se encontró la sala con id ${sala}` });
-        }
-
-        // Actualizar el nivel de ruido
         room.noise = noiseLevel;
 
         // console.log(`Noise level in room ${sala} updated to ${noiseLevel}`);
 
-        // TODO: emitir por WebSocket al dashboard
-        mqttws.publish('jail/noise', JSON.stringify({ sala, noiseLevel }));
+        // TODO: emitir por WebSocket al dashboard todas las habitaciones cuando le llega la de D todo en un solo mensaje
+        if (sala === 'D') {
+            const noiseLevels = {};
+            resources.rooms.forEach(r => {
+                noiseLevels[r.id] = r.noise;
+            });
+            mqttws.publish('jail/noise', JSON.stringify(noiseLevels));
+        }
 
         // TODO: si supera el umbral, emitir alerta
         // ej: if (noiseLevel > 80) io.emit('noiseAlert', { sala, level: noiseLevel });
@@ -151,22 +158,22 @@ router.post('/smoke', (req, res, next) => {
     try {
         const { sala, smokeLevel } = req.body;
 
-        // Emitir por WebSocket al dashboard
-        console.log(`Smoke level in room ${sala} updated to ${smokeLevel}`);
-        mqttws.publish('jail/smoke', JSON.stringify({ sala, smokeLevel }));
+        if (!sala || typeof smokeLevel !== 'number') { return res.status(400).json({ error: 'Datos inválidos: se requiere sala y smokeLevel numérico' });}
 
-        if (!sala || typeof smokeLevel !== 'number') {
-            return res.status(400).json({ error: 'Datos inválidos: se requiere sala y smokeLevel numérico' });
-        }
-
-        // Buscar la sala por ID
+        // Buscar la sala por ID y actualizar el nivel de humos
         const room = resources.rooms.find(r => r.id === sala);
-        if (!room) {
-            return res.status(404).json({ error: `No se encontró la sala con id ${sala}` });
-        }
-
-        // Actualizar el nivel de humo
         room.smoke = smokeLevel;
+
+        // Emitir por WebSocket al dashboard las 4 habitaciones cuando le llega la de D todo en un solo mensaje
+        if (sala === 'D') {
+            const smokeLevels = {};
+            resources.rooms.forEach(r => {
+                smokeLevels[r.id] = r.smoke;
+            });
+            mqttws.publish('jail/smoke', JSON.stringify(smokeLevels));
+        }
+        // console.log(`Smoke level in room ${sala} updated to ${smokeLevel}`);
+        // mqttws.publish('jail/smoke', JSON.stringify({ sala, smokeLevel }));
 
         // Si supera el umbral, emitir alerta por mqtt a carcel/aspersor
         if (smokeLevel > 1) {
@@ -181,6 +188,5 @@ router.post('/smoke', (req, res, next) => {
         next(error);
     }
 });
-
 
 module.exports = router;
