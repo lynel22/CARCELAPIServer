@@ -41,6 +41,27 @@ router.post('/prisoner', (req, res, next) => {
         next(err);
     }
 });
+
+/**
+ * DELETE /rest
+ * Reinicia el sistema borrando todos los prisioneros y posiciones
+ */
+
+router.delete('/reset', (req, res, next) => {
+    try {
+        resources.prisoners = [];
+        resources.positions = {};
+        resources.occupancy = {};
+
+        client.publish('carcel/reiniciar', JSON.stringify({}));
+
+        res.json({ message: 'Sistema reiniciado' });
+        next();
+    } catch (err) {
+        console.error('Error en DELETE /reset:', err);
+        next(err);
+    }
+});
     
 /**
  * POST /position
