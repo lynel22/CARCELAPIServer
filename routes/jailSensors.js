@@ -103,10 +103,19 @@ router.post('/position', (req, res, next) => {
             occupancy,
         });
 
-        mqttws.publish('jail/prisoners', JSON.stringify({ prisonerId, x, y, name, room: room ? room.name : 'Fuera del recinto', occupancy }));
+        // publicar por ws todos los prisioneros en un solo mensaje cuando llegue el que tiene el id igual a la longitud del array
+        if (prisonerId === resources.prisoners.length) {
+            const allPrisoners = [];
+            for (let i = 1; i <= resources.prisoners.length; i++) {
+                const pos = resources.positions[i];
+                const prName = resources.prisoners.find(p => p.id === i)?.name || 'Desconocido';
+                const prRoom = getRoomFromCoordinates(pos.x, pos.y);
+                allPrisoners.push({ prisonerId: i, x: pos.x, y: pos.y, name: prName, room: prRoom ? prRoom.name : 'Fuera del recinto' });
+            }
+            mqttws.publish('jail/prisoners', JSON.stringify(allPrisoners));
+        }
 
         next();
-
     } catch (err) {
         console.error('Error en POST /position:', err);
         next(err);
