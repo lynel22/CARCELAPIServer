@@ -61,8 +61,6 @@ router.delete('/reset', (req, res, next) => {
         next(err);
     }
 });
-    
-/**
 
 /** 
  * POST /time
@@ -76,7 +74,7 @@ router.post('/time', (req, res, next) => {
         }
         resources.time.hour = hour;
         resources.time.minute = minute;
-        client.publish('jail/time', JSON.stringify({ hour, minute }));
+        mqttws.publish('jail/time', JSON.stringify({ hour, minute }));
 
         res.json({ message: 'Hora enviada por MQTT'+ hour + ':' + minute });
         next();
