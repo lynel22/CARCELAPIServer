@@ -21,7 +21,7 @@ app.get('/', function(req, res) {
 
 app.use('/jail', jailSensorRoutes);
 
-app.use(converter());
+
 
 
 module.exports = app;
