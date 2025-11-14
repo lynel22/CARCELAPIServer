@@ -5,6 +5,10 @@ var mqttws = require('../MQTTWebSockets');
 var mqtt = require('mqtt');
 var client = mqtt.connect('mqtt://localhost');
 
+// Sets para controlar alertas únicas
+const nightAlertsSent = new Set();
+const capacityAlertsSent = new Set();
+
 router.get('/rooms', (req, res, next) => {
     try {
         const rooms = resources.rooms;
@@ -51,6 +55,7 @@ router.delete('/reset', (req, res, next) => {
         resources.prisoners = [];
         resources.positions = {};
         resources.occupancy = {};
+        resources.time = { hour: 0, minute: 0 };
 
         client.publish('carcel/reiniciar', JSON.stringify({}));
 
@@ -64,7 +69,7 @@ router.delete('/reset', (req, res, next) => {
 
 /** 
  * POST /time
- * 
+ * Recibe la hora actual y la publica por mqtt
  */
 router.post('/time', (req, res, next) => {
     try {
@@ -108,35 +113,38 @@ router.post('/position', (req, res, next) => {
         // Recalcular ocupaciones
         const occupancy = updateOccupancy();
 
-        // ======================
-        //  DETECCIÓN DE ALERTAS
-        // ======================
-
-        // Horario nocturno (00:00 - 06:00) fuera de celdas
-        
+        // --- Dentro de tu lógica de actualización ---
         const hour = resources.time.hour;
 
+        // --- Alerta nocturna ---
         if (hour >= 0 && hour < 6) {
             if (room && room.id !== 'B') {
-                console.log(
-                    `Alerta nocturna: Prisionero ${prisonerId} en ${room.name} (${room.id}) fuera de la sala de celdas`
-                );
-                // TODO: emitir evento WebSocket 
-                mqttws.publish('jail/alerts/night', JSON.stringify({prisonerId}));
-
+                // Generar un ID único para el preso y la sala
+                const alertId = `${prisonerId}_${room.id}`;
+                if (!nightAlertsSent.has(alertId)) {
+                    console.log(`Alerta nocturna: ${alertId} Set: ${[...nightAlertsSent]}`);
+                    mqttws.publish('jail/alerts/night', JSON.stringify({prisonerId, roomId: room.id}));
+                    nightAlertsSent.add(alertId);
+                }
             }
+        } else {
+            // Resetear alerta fuera del horario nocturno
+            nightAlertsSent.clear();
         }
 
-        // Aforo máximo en comedor o duchas
+        // --- Alerta de aforo máximo ---
         if (room && room.maxCapacity) {
             const count = occupancy[room.id];
             if (count > room.maxCapacity) {
-                console.log(`Aforo excedido en ${room.name}: ${count}/${room.maxCapacity}`);
-                mqttws.publish('jail/alerts/capacity', JSON.stringify({room}));
+                if (!capacityAlertsSent.has(room.id)) {
+                    mqttws.publish('jail/alerts/capacity', JSON.stringify({sala: room.id}));
+                    capacityAlertsSent.add(room.id);
+                }
+            } else {
+                // Resetear alerta si ya no hay sobrecupo
+                capacityAlertsSent.delete(room.id);
             }
         }
-
-        // ======================
 
         // console.log(`Prisionero ${prisonerId}: (${x}, ${y}) → ${room ? room.name : 'Fuera del recinto'}`);
 
@@ -149,11 +157,11 @@ router.post('/position', (req, res, next) => {
         // publicar por ws todos los prisioneros en un solo mensaje cuando llegue el que tiene el id igual a la longitud del array
         if (prisonerId === resources.prisoners.length) {
             const allPrisoners = [];
-            for (let i = 1; i <= resources.prisoners.length; i++) {
-                const pos = resources.positions[i];
-                const prName = resources.prisoners.find(p => p.id === i)?.name || 'Desconocido';
+            for (let prisoner of resources.prisoners) {
+                const pos = resources.positions[prisoner.id];
+                const prName = resources.prisoners.find(p => p.id === prisoner.id)?.name || 'Desconocido';
                 const prRoom = getRoomFromCoordinates(pos.x, pos.y);
-                allPrisoners.push({ prisonerId: i, x: pos.x, y: pos.y, name: prName, room: prRoom ? prRoom.name : 'Fuera del recinto' });
+                allPrisoners.push({ prisonerId: prisoner.id, x: pos.x, y: pos.y, name: prName, room: prRoom ? prRoom.name : 'Fuera del recinto' });
             }
             mqttws.publish('jail/prisoners', JSON.stringify(allPrisoners));
             mqttws.publish('jail/occupancy', JSON.stringify(occupancy));
@@ -191,9 +199,8 @@ router.post('/noise', (req, res, next) => {
         }
 
         // si supera el umbral, emitir alerta
-        if (noiseLevel > 1.5) {
+        if (noiseLevel > 90) {
             console.log(`Alerta de ruido: Nivel de ruido alto en sala ${sala}`);
-            
             mqttws.publish('jail/alerts/noise', JSON.stringify({sala}));
         }
 
@@ -228,12 +235,10 @@ router.post('/smoke', (req, res, next) => {
             });
             mqttws.publish('jail/smoke', JSON.stringify(smokeLevels));
         }
-        // console.log(`Smoke level in room ${sala} updated to ${smokeLevel}`);
-        // mqttws.publish('jail/smoke', JSON.stringify({ sala, smokeLevel }));
 
         // Si supera el umbral, emitir alerta por mqtt a carcel/aspersor
         if (smokeLevel > 1) {
-            client.publish('jail/alerta/aspersor', JSON.stringify({ sala }));
+            mqttws.publish('jail/alerts/sprinkler', JSON.stringify({ sala }));
             client.publish('carcel/aspersor', JSON.stringify({ sala }));
         }
 

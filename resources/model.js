@@ -31,6 +31,7 @@ const resources = {
             ],
             noise: 0,
             smoke: 0,
+            extinguisher: false,
             maxCapacity: 5, // aforo máximo
             doors: [
                 { pos: [8, 10], destino: 'B' }
@@ -47,6 +48,7 @@ const resources = {
             ],
             noise: 0,
             smoke: 0,
+            extinguisher: false,
             doors: [
                 { pos: [8, 10], destino: 'A' },
                 { pos: [6, 16], destino: 'D' },
@@ -64,6 +66,7 @@ const resources = {
             ],
             noise: 0,
             smoke: 0,
+            extinguisher: false,
             doors: [
                 { pos: [15, 10], destino: 'B' }
             ]
@@ -79,6 +82,7 @@ const resources = {
             ],
             noise: 0,
             smoke: 0,
+            extinguisher: false,
             maxCapacity: 2, // aforo máximo
             doors: [
                 { pos: [6, 16], destino: 'B' }
