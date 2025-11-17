@@ -9,6 +9,10 @@ var client = mqtt.connect('mqtt://localhost');
 const nightAlertsSent = new Set();
 const capacityAlertsSent = new Set();
 
+/**
+ * GET /rooms
+ * Devuelve la lista de salas
+ */
 router.get('/rooms', (req, res, next) => {
     try {
         const rooms = resources.rooms;
@@ -21,7 +25,7 @@ router.get('/rooms', (req, res, next) => {
 });
 
 /**
- * POST /position
+ * POST /prisoner
  * Recibe un prisionero y lo envia por mqtt a node-red
  */
 router.post('/prisoner', (req, res, next) => {
@@ -47,8 +51,9 @@ router.post('/prisoner', (req, res, next) => {
 });
 
 /**
- * DELETE /rest
+ * DELETE /reset
  * Reinicia el sistema borrando todos los prisioneros y posiciones
+ * y envia un mensaje por mqtt a node-red
  */
 router.delete('/reset', (req, res, next) => {
     try {
@@ -69,7 +74,7 @@ router.delete('/reset', (req, res, next) => {
 
 /** 
  * POST /time
- * Recibe la hora actual y la publica por mqtt
+ * Recibe la hora actual y la publica por mqtt ws
  */
 router.post('/time', (req, res, next) => {
     try {
@@ -112,14 +117,11 @@ router.post('/position', (req, res, next) => {
 
         // Recalcular ocupaciones
         const occupancy = updateOccupancy();
-
-        // --- Dentro de tu lógica de actualización ---
         const hour = resources.time.hour;
 
-        // --- Alerta nocturna ---
+        // Alerta nocturna
         if (hour >= 0 && hour < 6) {
             if (room && room.id !== 'B') {
-                // Generar un ID único para el preso y la sala
                 const alertId = `${prisonerId}_${room.id}`;
                 if (!nightAlertsSent.has(alertId)) {
                     console.log(`Alerta nocturna: ${alertId} Set: ${[...nightAlertsSent]}`);
@@ -132,7 +134,7 @@ router.post('/position', (req, res, next) => {
             nightAlertsSent.clear();
         }
 
-        // --- Alerta de aforo máximo ---
+        // Alerta de aforo máximo
         if (room && room.maxCapacity) {
             const count = occupancy[room.id];
             if (count > room.maxCapacity) {
@@ -141,13 +143,12 @@ router.post('/position', (req, res, next) => {
                     capacityAlertsSent.add(room.id);
                 }
             } else {
-                // Resetear alerta si ya no hay sobrecupo
+                // Resetear alerta si la sala ya no está al máximo
                 capacityAlertsSent.delete(room.id);
             }
         }
 
         // console.log(`Prisionero ${prisonerId}: (${x}, ${y}) → ${room ? room.name : 'Fuera del recinto'}`);
-
         res.json({
             message: 'Posición actualizada',
             room: room ? room.name : 'Fuera del recinto',
@@ -187,7 +188,6 @@ router.post('/noise', (req, res, next) => {
         // Buscar la sala por ID y actualiza el nivel de ruido
         const room = resources.rooms.find(r => r.id === sala);
         room.noise = noiseLevel;
-
 
         // emitir por WebSocket al dashboard todas las habitaciones cuando le llega la de D todo en un solo mensaje
         if (sala === 'D') {
